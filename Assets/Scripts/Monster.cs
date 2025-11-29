@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 public class Monster : MonoBehaviour
@@ -9,6 +9,13 @@ public class Monster : MonoBehaviour
     [Header("UI")]
     public HealthBar healthBar;
 
+    [Header("Patrol")]
+    public Transform leftPoint;   // จุดซ้ายสุด
+    public Transform rightPoint;  // จุดขวาสุด
+    public float moveSpeed = 2f;
+
+    private bool movingRight = true;
+
     private Coroutine damageCoroutine;
 
     void Awake()
@@ -18,6 +25,38 @@ public class Monster : MonoBehaviour
             healthBar.SetMaxHealth(maxHealth);
     }
 
+    void Update()
+    {
+        Patrol();
+    }
+
+    void Patrol()
+    {
+        if (leftPoint == null || rightPoint == null) return;
+
+        // กำหนดทิศทางและ target
+        Transform targetPoint = movingRight ? rightPoint : leftPoint;
+        Vector3 direction = (targetPoint.position - transform.position).normalized;
+
+        // เคลื่อนที่
+        transform.position += direction * moveSpeed * Time.deltaTime;
+
+        // เช็คถ้าใกล้จุดปลายทาง
+        if (Vector3.Distance(transform.position, targetPoint.position) < 0.1f)
+        {
+            movingRight = !movingRight; // เปลี่ยนทิศทาง
+            Flip(); // พลิกตัวละครตามทิศทาง
+        }
+    }
+
+    void Flip()
+    {
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+    }
+
+    // ระบบเลือดเดิม
     public void TakeDamage(int amount)
     {
         currentHealth -= amount;
@@ -33,7 +72,14 @@ public class Monster : MonoBehaviour
 
     private void Die()
     {
-        Destroy(gameObject);
+        // ตรวจสอบว่าชนะเกมหรือยัง
+        if (ScoreManager.instance.score >= 60)
+        {
+            if (WinManager.instance != null)
+                WinManager.instance.ShowWinUI();
+        }
+
+        Destroy(gameObject); // ทำลาย Monster
     }
 
     public void Heal(int amount)
@@ -45,14 +91,12 @@ public class Monster : MonoBehaviour
             healthBar.SetHealth(currentHealth);
     }
 
-    // �����Ŵ���ʹ�ء��
     public void StartTakingDamageOverTime(int amount, float interval)
     {
         if (damageCoroutine == null)
             damageCoroutine = StartCoroutine(DamageOverTime(amount, interval));
     }
 
-    // ��شŴ���ʹ
     public void StopTakingDamageOverTime()
     {
         if (damageCoroutine != null)
