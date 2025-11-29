@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections;
 
 public class Shooter : MonoBehaviour
 {
@@ -11,7 +12,9 @@ public class Shooter : MonoBehaviour
     private int currentHealth;
 
     [Header("UI")]
-    public HealthBar healthBar; // ลิงก์ Health Bar ของตัวละครนี้
+    public HealthBar healthBar;
+
+    private Coroutine damageCoroutine;
 
     void Awake()
     {
@@ -24,6 +27,7 @@ public class Shooter : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.RightArrow))
             Shoot(Vector2.right);
+
         if (Input.GetKeyDown(KeyCode.LeftArrow))
             Shoot(Vector2.left);
     }
@@ -35,9 +39,10 @@ public class Shooter : MonoBehaviour
         newProjectile.Launch(direction);
     }
 
-    public void TakeDamage(int damage)
+    // ลดเลือด Shooter
+    public void TakeDamage(int amount)
     {
-        currentHealth -= damage;
+        currentHealth -= amount;
         if (healthBar != null)
             healthBar.SetHealth(currentHealth);
 
@@ -47,6 +52,7 @@ public class Shooter : MonoBehaviour
 
     private void Die()
     {
+        Debug.Log("Shooter is dead!");
         Destroy(gameObject);
     }
 
@@ -55,7 +61,43 @@ public class Shooter : MonoBehaviour
         currentHealth += amount;
         if (currentHealth > maxHealth)
             currentHealth = maxHealth;
+
         if (healthBar != null)
             healthBar.SetHealth(currentHealth);
+    }
+
+    // ==============================
+    // ตรวจจับการชน Monster
+    // ==============================
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.GetComponent<Monster>() != null)
+        {
+            // เริ่มลดเลือดทุก 1 วิ
+            if (damageCoroutine == null)
+                damageCoroutine = StartCoroutine(DamageOverTime(10, 1f));
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.GetComponent<Monster>() != null)
+        {
+            // หยุดลดเลือดเมื่อออกจากตัว Monster
+            if (damageCoroutine != null)
+            {
+                StopCoroutine(damageCoroutine);
+                damageCoroutine = null;
+            }
+        }
+    }
+
+    private IEnumerator DamageOverTime(int amount, float interval)
+    {
+        while (true)
+        {
+            TakeDamage(amount);
+            yield return new WaitForSeconds(interval);
+        }
     }
 }

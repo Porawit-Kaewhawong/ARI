@@ -1,12 +1,15 @@
 using UnityEngine;
+using System.Collections;
 
 public class Monster : MonoBehaviour
 {
-    [SerializeField] private int maxHealth = 50; // เลือดสูงสุด
+    [SerializeField] private int maxHealth = 50;
     private int currentHealth;
 
     [Header("UI")]
-    public HealthBar healthBar; // ลิงก์ Health Bar ของมอนสเตอร์นี้
+    public HealthBar healthBar;
+
+    private Coroutine damageCoroutine;
 
     void Awake()
     {
@@ -15,17 +18,15 @@ public class Monster : MonoBehaviour
             healthBar.SetMaxHealth(maxHealth);
     }
 
-    // ฟังก์ชันรับดาเมจ
     public void TakeDamage(int amount)
     {
         currentHealth -= amount;
-
         if (healthBar != null)
             healthBar.SetHealth(currentHealth);
 
         if (currentHealth <= 0)
         {
-            ScoreManager.instance.AddScore(10); // เพิ่มคะแนนเมื่อมอนสเตอร์ตาย
+            ScoreManager.instance.AddScore(10);
             Die();
         }
     }
@@ -35,14 +36,38 @@ public class Monster : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // ฟังก์ชันเพิ่มเลือด ถ้าต้องการ
     public void Heal(int amount)
     {
         currentHealth += amount;
         if (currentHealth > maxHealth)
             currentHealth = maxHealth;
-
         if (healthBar != null)
             healthBar.SetHealth(currentHealth);
+    }
+
+    // เริ่มลดเลือดทุกวิ
+    public void StartTakingDamageOverTime(int amount, float interval)
+    {
+        if (damageCoroutine == null)
+            damageCoroutine = StartCoroutine(DamageOverTime(amount, interval));
+    }
+
+    // หยุดลดเลือด
+    public void StopTakingDamageOverTime()
+    {
+        if (damageCoroutine != null)
+        {
+            StopCoroutine(damageCoroutine);
+            damageCoroutine = null;
+        }
+    }
+
+    private IEnumerator DamageOverTime(int amount, float interval)
+    {
+        while (true)
+        {
+            TakeDamage(amount);
+            yield return new WaitForSeconds(interval);
+        }
     }
 }
