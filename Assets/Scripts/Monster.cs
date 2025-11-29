@@ -2,23 +2,47 @@ using UnityEngine;
 
 public class Monster : MonoBehaviour
 {
-    // เลือดของมอนสเตอร์ (Encapsulation แบบง่าย)
-    [SerializeField] private int health = 50;
+    [SerializeField] private int maxHealth = 50; // เลือดสูงสุด
+    private int currentHealth;
+
+    [Header("UI")]
+    public HealthBar healthBar; // ลิงก์ Health Bar ของมอนสเตอร์นี้
+
+    void Awake()
+    {
+        currentHealth = maxHealth;
+        if (healthBar != null)
+            healthBar.SetMaxHealth(maxHealth);
+    }
 
     // ฟังก์ชันรับดาเมจ
     public void TakeDamage(int amount)
     {
-        health -= amount;                 // ลดเลือดตามดาเมจที่รับ
-        Debug.Log("Monster HP: " + health);
+        currentHealth -= amount;
 
-        if (health <= 0)
+        if (healthBar != null)
+            healthBar.SetHealth(currentHealth);
+
+        if (currentHealth <= 0)
         {
-            Die();                        // ถ้าเลือดหมดก็ทำลายตัวเอง
+            ScoreManager.instance.AddScore(10); // เพิ่มคะแนนเมื่อมอนสเตอร์ตาย
+            Die();
         }
     }
 
     private void Die()
     {
-        Destroy(gameObject);              // ทำลายมอนสเตอร์
+        Destroy(gameObject);
+    }
+
+    // ฟังก์ชันเพิ่มเลือด ถ้าต้องการ
+    public void Heal(int amount)
+    {
+        currentHealth += amount;
+        if (currentHealth > maxHealth)
+            currentHealth = maxHealth;
+
+        if (healthBar != null)
+            healthBar.SetHealth(currentHealth);
     }
 }
