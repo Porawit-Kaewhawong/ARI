@@ -3,21 +3,37 @@ using System.Collections;
 
 public class Monster : MonoBehaviour
 {
+    // ================================
+    // ค่าเลือดสูงสุด → private ใช้ Encapsulation
+    // ================================
     [SerializeField] private int maxHealth = 50;
+
+    // เลือดปัจจุบัน → private
     private int currentHealth;
 
     [Header("UI")]
+    // แถบเลือด Monster
     public HealthBar healthBar;
 
     [Header("Patrol")]
-    public Transform leftPoint;   // จุดซ้ายสุด
-    public Transform rightPoint;  // จุดขวาสุด
+    // จุดซ้ายสุดและขวาสุดของการเดิน
+    public Transform leftPoint;
+    public Transform rightPoint;
+
+    // ความเร็วในการเดิน
     public float moveSpeed = 2f;
 
+    // ทิศทางเดินปัจจุบัน (true = ขวา, false = ซ้าย)
     private bool movingRight = true;
 
+    // Coroutine สำหรับระบบดาเมจต่อเนื่อง
     private Coroutine damageCoroutine;
 
+
+    // ======================================
+    // Awake: เรียกเมื่อโหลดออบเจ็กต์
+    // ตั้งค่าเลือดเริ่มต้นและ UI
+    // ======================================
     void Awake()
     {
         currentHealth = maxHealth;
@@ -25,30 +41,40 @@ public class Monster : MonoBehaviour
             healthBar.SetMaxHealth(maxHealth);
     }
 
+    // ======================================
+    // Update: เรียกทุกเฟรม
+    // ทำการ Patrol
+    // ======================================
     void Update()
     {
         Patrol();
     }
 
+    // ======================================
+    // Patrol: เดินไปมาระหว่าง leftPoint และ rightPoint
+    // ======================================
     void Patrol()
     {
         if (leftPoint == null || rightPoint == null) return;
 
-        // กำหนดทิศทางและ target
+        // เลือก target ตามทิศทาง
         Transform targetPoint = movingRight ? rightPoint : leftPoint;
         Vector3 direction = (targetPoint.position - transform.position).normalized;
 
         // เคลื่อนที่
         transform.position += direction * moveSpeed * Time.deltaTime;
 
-        // เช็คถ้าใกล้จุดปลายทาง
+        // ถ้าใกล้จุดปลายทาง → เปลี่ยนทิศทาง
         if (Vector3.Distance(transform.position, targetPoint.position) < 0.1f)
         {
-            movingRight = !movingRight; // เปลี่ยนทิศทาง
-            Flip(); // พลิกตัวละครตามทิศทาง
+            movingRight = !movingRight;
+            Flip(); // พลิกตัวละครตามทิศ
         }
     }
 
+    // ======================================
+    // Flip: พลิกตัวละครตามทิศทาง
+    // ======================================
     void Flip()
     {
         Vector3 scale = transform.localScale;
@@ -56,13 +82,19 @@ public class Monster : MonoBehaviour
         transform.localScale = scale;
     }
 
-    // ระบบเลือดเดิม
+    // ======================================
+    // TakeDamage: ลดเลือด Monster
+    // ใช้ Encapsulation → ป้องกันแก้ currentHealth จากข้างนอกโดยตรง
+    // ======================================
     public void TakeDamage(int amount)
     {
         currentHealth -= amount;
+
+        // อัปเดต UI
         if (healthBar != null)
             healthBar.SetHealth(currentHealth);
 
+        // ถ้าเลือดหมด → เพิ่มคะแนนผู้เล่นและตาย
         if (currentHealth <= 0)
         {
             ScoreManager.instance.AddScore(10);
@@ -70,9 +102,12 @@ public class Monster : MonoBehaviour
         }
     }
 
+    // ======================================
+    // Die: ทำลาย Monster และตรวจสอบว่าผู้เล่นชนะเกมหรือยัง
+    // ======================================
     private void Die()
     {
-        // ตรวจสอบว่าชนะเกมหรือยัง
+        // ถ้าคะแนน >= 60 → แสดง Win UI
         if (ScoreManager.instance.score >= 60)
         {
             if (WinManager.instance != null)
@@ -82,21 +117,33 @@ public class Monster : MonoBehaviour
         Destroy(gameObject); // ทำลาย Monster
     }
 
+    // ======================================
+    // Heal: ฟื้นฟูเลือด
+    // ใช้ Encapsulation → ป้องกันเลือดเกิน maxHealth
+    // ======================================
     public void Heal(int amount)
     {
         currentHealth += amount;
         if (currentHealth > maxHealth)
             currentHealth = maxHealth;
+
         if (healthBar != null)
             healthBar.SetHealth(currentHealth);
     }
 
+    // ======================================
+    // StartTakingDamageOverTime: เริ่มลดเลือดทุก interval วินาที
+    // ใช้ Coroutine
+    // ======================================
     public void StartTakingDamageOverTime(int amount, float interval)
     {
         if (damageCoroutine == null)
             damageCoroutine = StartCoroutine(DamageOverTime(amount, interval));
     }
 
+    // ======================================
+    // StopTakingDamageOverTime: หยุดลดเลือดต่อเนื่อง
+    // ======================================
     public void StopTakingDamageOverTime()
     {
         if (damageCoroutine != null)
@@ -106,6 +153,9 @@ public class Monster : MonoBehaviour
         }
     }
 
+    // ======================================
+    // DamageOverTime: Coroutine ลดเลือดทุก interval วินาที
+    // ======================================
     private IEnumerator DamageOverTime(int amount, float interval)
     {
         while (true)
