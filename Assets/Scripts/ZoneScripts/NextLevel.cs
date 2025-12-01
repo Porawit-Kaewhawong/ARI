@@ -17,7 +17,7 @@ public class NextLevel : MonoBehaviour
         // ถ้า Collider เป็นผู้เล่น → สั่งกล้องไปโซนใหม่
         if (other.CompareTag("Player"))
         {
-            cam.GoToZone(zoneIndex); // เรียกฟังก์ชันจาก CameraController
+            cam.GoToZone(zoneIndex); // เรียกฟังก์ชันจาก CameraController (Abstraction)
         }
     }
 }
